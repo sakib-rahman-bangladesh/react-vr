@@ -31,16 +31,27 @@ declare module 'three' {
   }
 
   declare class BufferAttribute {
+    array: $TypedArray;
+    data: any;
+    needsUpdate: boolean;
+
     constructor(): BufferAttribute;
     constructor($TypedArray, number): BufferAttribute;
   }
 
   declare class BufferGeometry extends Geometry {
+    attributes: {[name: string]: BufferAttribute};
+    drawRange: {start: number, count: number};
+    index: BufferAttribute;
+    needsUpdate: boolean;
+
     constructor(): BufferGeometry;
     addAttribute(name: string, attr: BufferAttribute): void;
     addGroup(start: number, length: number, index: number): void;
     computeVertexNormals(): void;
-    setIndex(attr: BufferAttribute): void;
+    setIndex(attr: BufferAttribute | Array<number>): void;
+    setDrawRange(number, number): void;
+    applyMatrix(Matrix4): void;
   }
 
   declare class CylinderGeometry extends Geometry {
@@ -111,6 +122,7 @@ declare module 'three' {
     constructor(number, number, number, ?string): this;
     copy(e: Euler): this;
     set(number, number, number, string): this;
+    setFromQuaternion(Quaternion, string): this;
   }
 
   declare class Face3 {
@@ -133,6 +145,16 @@ declare module 'three' {
     dispose(): void;
   }
 
+  declare class InterleavedBuffer {
+    array: $TypedArray;
+    needsUpdate: boolean;
+    constructor($TypedArray, number): InterleavedBuffer;
+  }
+
+  declare class InterleavedBufferAttribute extends BufferAttribute {
+    constructor(InterleavedBuffer, number, number, boolean): InterleavedBufferAttribute;
+  }
+
   declare class Material {
     color: Color;
     depthTest: boolean;
@@ -140,6 +162,7 @@ declare module 'three' {
     map: ?Texture;
     needsUpdate: boolean;
     opacity: number;
+    premultipliedAlpha: boolean;
     renderOrder: number;
     shading: number;
     transparent: boolean;
@@ -147,6 +170,7 @@ declare module 'three' {
     wireframe: boolean;
     vertexColors: number;
 
+    clone(): this;
     dispose(): void;
     setValues(any): void;
   }
@@ -155,6 +179,13 @@ declare module 'three' {
     decompose(Vector3, Quaternion, Vector3): this;
     fromArray(Array<number> | $TypedArray): void;
     getInverse(matrix: Matrix4): Matrix4;
+    set(number, number, number, number,
+      number, number, number, number,
+      number, number, number, number,
+      number, number, number, number): this;
+    makeScale(number, number, number): this;
+    makeRotationY(number): this;
+    multiply(Matrix4): this;
   }
 
   declare class Mesh extends Object3D {
@@ -257,6 +288,7 @@ declare module 'three' {
   }
 
   declare class Texture {
+    flipY: boolean;
     generateMipmaps: boolean;
     image: Image | HTMLCanvasElement;
     wrapS: number;
@@ -266,7 +298,7 @@ declare module 'three' {
     needsUpdate: boolean;
     repeat: Vector2;
 
-    constructor(HTMLCanvasElement | HTMLVideoElement | Image): this;
+    constructor(src?: HTMLCanvasElement | HTMLVideoElement | Image): this;
 
     dispose(): void;
   }
@@ -347,5 +379,13 @@ declare module 'three' {
   declare class AnimationMixer {
     constructor(Scene): this;
     clipAction(clip: any): any;
+  }
+
+  declare class EventDispatcher {
+    constructor(): this;
+    addEventListener(string, Object => void): void;
+    hasEventListener(string, Object => void): bool;
+    removeEventListener(string, Object => void): void;
+    dispatchEvent(Object): void;
   }
 }

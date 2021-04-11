@@ -9,11 +9,12 @@
  * @providesModule setupDevtools
  * @flow
  */
-'use strict';
+
+/* eslint-disable import/no-commonjs */
 
 type DevToolsPluginConnection = {
-  isAppActive: () => boolean,
   host: string,
+  isAppActive: () => boolean,
   port: number,
 };
 
@@ -21,12 +22,11 @@ type DevToolsPlugin = {
   connectToDevTools: (connection: DevToolsPluginConnection) => void,
 };
 
-let register = function () {
+let register = function() {
   // noop
 };
 
 if (__DEV__) {
-  const AppState = require('AppState');
   const WebSocket = require('WebSocket');
   const {PlatformConstants} = require('NativeModules');
   /* $FlowFixMe(>=0.54.0 site=react_native_oss) This comment suppresses an
@@ -34,7 +34,7 @@ if (__DEV__) {
    * comment and run Flow. */
   const reactDevTools = require('react-devtools-core');
 
-  register = function (plugin: DevToolsPlugin) {
+  register = function(plugin: DevToolsPlugin) {
     // Initialize dev tools only if the native module for WebSocket is available
     if (self.__DEVTOOLS__ && WebSocket.isAvailable) {
       // Don't steal the DevTools from currently active app.
@@ -44,9 +44,10 @@ if (__DEV__) {
       const isAppActive = () => true;
 
       // Special case: Genymotion is running on a different host.
-      const host = PlatformConstants && PlatformConstants.ServerHost ?
-        PlatformConstants.ServerHost.split(':')[0] :
-        'localhost';
+      const host =
+        PlatformConstants && PlatformConstants.ServerHost
+          ? PlatformConstants.ServerHost.split(':')[0]
+          : 'localhost';
 
       plugin.connectToDevTools({
         isAppActive,
@@ -60,6 +61,38 @@ if (__DEV__) {
   };
 
   register(reactDevTools);
+  window.__REACT_DEVTOOLS_GLOBAL_HOOK__.on('react-devtools', agent => {
+    const NativeModules = require('NativeModules');
+    const {UIManager} = NativeModules;
+    let currentHighlight = null;
+    const ReactNativeComponentTree = require('ReactNativeComponentTree');
+      agent.on('highlight', ({node}) => {
+        if (typeof node !== 'number') {
+          if (typeof node._nativeTag === 'number') {
+            node = node._nativeTag;
+          } else {
+            return;
+          }
+        }
+        currentHighlight = node;
+        if (UIManager.setBoundingBoxVisible) {
+          UIManager.setBoundingBoxVisible(node, true);
+        }
+      });
+
+      const hideHighlight = () => {
+        if (currentHighlight) {
+          if (UIManager.setBoundingBoxVisible) {
+            UIManager.setBoundingBoxVisible(currentHighlight, false);
+          }
+          currentHighlight = null;
+        }
+      };
+
+      agent.on('hideHighlight', hideHighlight);
+
+      agent.on('shutdown', hideHighlight);
+  });
   global.registerDevtoolsPlugin = register;
 }
 
